@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import uuid
 
 import cv2
@@ -10,6 +11,19 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .forms import DocumentForm
 from .models import DocModel
+=======
+from django.views.decorators.clickjacking import xframe_options_exempt
+import numpy as np
+from django.shortcuts import render, redirect, reverse
+from django.http import JsonResponse, HttpResponse, StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import DocModel
+import json
+from django.views.decorators import gzip
+import cv2
+from .forms import DocumentForm
+from django.conf import settings
+>>>>>>> c958c898 (batman)
 
 model = settings.MODEL
 
@@ -18,8 +32,14 @@ class VideoCamera(object):
     def __init__(self, url=None):
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.status = True
+<<<<<<< HEAD
         self.fontScale = 0.6
         self.thickness = 1
+=======
+        self.org = (50, 80)
+        self.fontScale = 1.4
+        self.thickness = 3
+>>>>>>> c958c898 (batman)
         self.SIZE = (150, 150)
         self.THRESH = 0.76
         self.url = 0 if url is None else "." + url
@@ -42,13 +62,18 @@ class VideoCamera(object):
             tmp = tmp / 255.0
             pred = model.predict(np.array([tmp]))
             string = "Suspicious" if pred[0][0] > self.THRESH else "Peaceful"
+<<<<<<< HEAD
             string += f" {pred[0][0]:.2f}"
+=======
+            string += f" {str(pred[0][0])}"
+>>>>>>> c958c898 (batman)
             self.prev = string
 
         else:
             string = self.prev
 
         color = (255, 255, 255)
+<<<<<<< HEAD
         label_bg = (0, 200, 100) if string.split(" ")[0] == "Peaceful" else (0, 0, 255)
 
         # Draw small label in top-right corner
@@ -70,6 +95,17 @@ class VideoCamera(object):
             image,
             string,
             text_origin,
+=======
+        image = (
+            cv2.rectangle(image, (20, 20), (600, 100), (0, 200, 100), cv2.FILLED)
+            if string.split(" ")[0] == "Peaceful"
+            else cv2.rectangle(image, (20, 20), (600, 100), (0, 0, 255), cv2.FILLED)
+        )
+        image = cv2.putText(
+            image,
+            string,
+            self.org,
+>>>>>>> c958c898 (batman)
             self.font,
             self.fontScale,
             color,
@@ -95,7 +131,11 @@ def Stream(request):
             gen(VideoCamera(entry.vid.url)),
             content_type="multipart/x-mixed-replace;boundary=frame",
         )
+<<<<<<< HEAD
     except StreamingHttpResponse.HttpResponseServerError:
+=======
+    except StreamingHttpResponse.HttpResponseServerError as e:
+>>>>>>> c958c898 (batman)
         print("aborted")
 
 
@@ -107,7 +147,11 @@ def StreamToken(request, token):
             gen(VideoCamera(entry.vid.url)),
             content_type="multipart/x-mixed-replace;boundary=frame",
         )
+<<<<<<< HEAD
     except StreamingHttpResponse.HttpResponseServerError:
+=======
+    except StreamingHttpResponse.HttpResponseServerError as e:
+>>>>>>> c958c898 (batman)
         print("aborted")
 
 
@@ -147,6 +191,7 @@ def StreamTokenView(request, token):
 @csrf_exempt
 def APIEnd(request):
     if request.method == "POST":
+<<<<<<< HEAD
         # Accept a provided token, or generate one if missing
         stoken = request.POST.get("stoken") or str(uuid.uuid4())
 
@@ -172,6 +217,24 @@ def APIEnd(request):
     return JsonResponse(
         {"status": "idle", "message": "Send a POST request with a video file."}
     )
+=======
+        try:
+            stoken = request.POST["stoken"]
+            vidFile = request.FILES["vid"]
+            DocModel(stoken=stoken, vid=vidFile).save()
+            baseurl = request.build_absolute_uri(reverse("home"))
+            return JsonResponse(
+                {
+                    "status": "ok",
+                    "message": f"Files Received from sender {stoken}",
+                    "vidurl": baseurl + "streamtoken/" + stoken,
+                }
+            )
+        except:
+            return HttpResponse(status=400)
+
+    return JsonResponse({"status": "Wait kro bhai"})
+>>>>>>> c958c898 (batman)
 
 
 # Create your views here.
