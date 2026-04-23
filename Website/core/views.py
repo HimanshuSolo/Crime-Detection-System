@@ -1,14 +1,15 @@
-from django.views.decorators.clickjacking import xframe_options_exempt
-import numpy as np
-from django.shortcuts import render, redirect, reverse
-from django.http import JsonResponse, HttpResponse, StreamingHttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import DocModel
-import json
-from django.views.decorators import gzip
+import uuid
+
 import cv2
-from .forms import DocumentForm
+import numpy as np
 from django.conf import settings
+from django.http import JsonResponse, StreamingHttpResponse
+from django.shortcuts import redirect, render, reverse
+from django.views.decorators import gzip
+from django.views.decorators.csrf import csrf_exempt
+
+from .forms import DocumentForm
+from .models import DocModel
 
 model = settings.MODEL
 
@@ -17,9 +18,8 @@ class VideoCamera(object):
     def __init__(self, url=None):
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.status = True
-        self.org = (50, 80)
-        self.fontScale = 1.4
-        self.thickness = 3
+        self.fontScale = 0.6
+        self.thickness = 1
         self.SIZE = (150, 150)
         self.THRESH = 0.76
         self.url = 0 if url is None else "." + url
@@ -42,22 +42,34 @@ class VideoCamera(object):
             tmp = tmp / 255.0
             pred = model.predict(np.array([tmp]))
             string = "Suspicious" if pred[0][0] > self.THRESH else "Peaceful"
-            string += f" {str(pred[0][0])}"
+            string += f" {pred[0][0]:.2f}"
             self.prev = string
 
         else:
             string = self.prev
 
         color = (255, 255, 255)
-        image = (
-            cv2.rectangle(image, (20, 20), (600, 100), (0, 200, 100), cv2.FILLED)
-            if string.split(" ")[0] == "Peaceful"
-            else cv2.rectangle(image, (20, 20), (600, 100), (0, 0, 255), cv2.FILLED)
+        label_bg = (0, 200, 100) if string.split(" ")[0] == "Peaceful" else (0, 0, 255)
+
+        # Draw small label in top-right corner
+        (text_w, text_h), baseline = cv2.getTextSize(
+            string,
+            self.font,
+            self.fontScale,
+            self.thickness,
         )
-        image = cv2.putText(
+        pad_x = 8
+        pad_y = 4
+        img_h, img_w = image.shape[:2]
+        top_left = (img_w - text_w - pad_x * 2 - 10, 8)
+        bottom_right = (img_w - 8, text_h + baseline + pad_y * 2 + 8)
+        text_origin = (top_left[0] + pad_x, top_left[1] + pad_y + text_h)
+
+        cv2.rectangle(image, top_left, bottom_right, label_bg, cv2.FILLED)
+        cv2.putText(
             image,
             string,
-            self.org,
+            text_origin,
             self.font,
             self.fontScale,
             color,
@@ -83,7 +95,7 @@ def Stream(request):
             gen(VideoCamera(entry.vid.url)),
             content_type="multipart/x-mixed-replace;boundary=frame",
         )
-    except StreamingHttpResponse.HttpResponseServerError as e:
+    except StreamingHttpResponse.HttpResponseServerError:
         print("aborted")
 
 
@@ -95,7 +107,7 @@ def StreamToken(request, token):
             gen(VideoCamera(entry.vid.url)),
             content_type="multipart/x-mixed-replace;boundary=frame",
         )
-    except StreamingHttpResponse.HttpResponseServerError as e:
+    except StreamingHttpResponse.HttpResponseServerError:
         print("aborted")
 
 
@@ -135,22 +147,31 @@ def StreamTokenView(request, token):
 @csrf_exempt
 def APIEnd(request):
     if request.method == "POST":
-        try:
-            stoken = request.POST["stoken"]
-            vidFile = request.FILES["vid"]
-            DocModel(stoken=stoken, vid=vidFile).save()
-            baseurl = request.build_absolute_uri(reverse("home"))
-            return JsonResponse(
-                {
-                    "status": "ok",
-                    "message": f"Files Received from sender {stoken}",
-                    "vidurl": baseurl + "streamtoken/" + stoken,
-                }
-            )
-        except:
-            return HttpResponse(status=400)
+        # Accept a provided token, or generate one if missing
+        stoken = request.POST.get("stoken") or str(uuid.uuid4())
 
-    return JsonResponse({"status": "Wait kro bhai"})
+        vidFile = request.FILES.get("vid")
+        if not vidFile:
+            return JsonResponse(
+                {"status": "error", "message": "Missing 'vid' file field."}, status=400
+            )
+
+        # Save the uploaded video under the token
+        DocModel(stoken=stoken, vid=vidFile).save()
+
+        baseurl = request.build_absolute_uri(reverse("home"))
+        return JsonResponse(
+            {
+                "status": "ok",
+                "token": stoken,
+                "message": f"Files received for token {stoken}",
+                "vidurl": baseurl + "streamtoken/" + stoken,
+            }
+        )
+
+    return JsonResponse(
+        {"status": "idle", "message": "Send a POST request with a video file."}
+    )
 
 
 # Create your views here.

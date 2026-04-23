@@ -1,0 +1,37 @@
+"""
+Django Settings Update for Next.js Frontend
+
+Add the following to Website/Website/settings.py to enable CORS and API integration:
+"""
+
+# CORS Configuration for Next.js Frontend
+INSTALLED_APPS = [
+    # ... existing apps
+    'corsheaders',
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Add this at the top
+    'django.middleware.security.SecurityMiddleware',
+    # ... rest of middleware
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+# Allow credentials in CORS
+CORS_ALLOW_CREDENTIALS = True
+
+# Media files configuration (for video uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Optional: Increase file upload size limit (default 2.5MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+
+print("✓ CORS and API settings configured for Next.js frontend")

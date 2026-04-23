@@ -1,15 +1,15 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Crime Detection System',
-  description: 'AI-powered crime detection using video analysis',
-}
+  title: "Crime Detection System",
+  description: "AI-powered crime detection using video analysis",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -24,13 +24,11 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="main-content">
-          {children}
-        </main>
+        <main className="main-content">{children}</main>
         <footer className="footer">
-          <p>&copy; 2026 Crime Detection System. All rights reserved.</p>
+          <p>&copy; Crime Detection System.</p>
         </footer>
       </body>
     </html>
-  )
+  );
 }
