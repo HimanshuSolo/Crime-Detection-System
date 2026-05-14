@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+// @ts-expect-error -- Next.js supports global CSS side-effect imports in app layout.
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
               <a href="/">Home</a>
               <a href="/analyze">Analyze Video</a>
               <a href="/stream">Live Stream</a>
+              <a href="/alerts">Alerts</a>
             </nav>
           </div>
         </header>
