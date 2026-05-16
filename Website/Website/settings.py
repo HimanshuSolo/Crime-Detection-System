@@ -18,6 +18,44 @@ from tensorflow import keras
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    with env_path.open() as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def _env_bool(name, default=False):
+    return os.environ.get(name, str(default)).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(name, default):
+    try:
+        return float(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+_load_env_file(BASE_DIR / '.env')
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -128,6 +166,21 @@ STATIC_URL = '/assets/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MODEL = keras.models.load_model('Models/CustomCNN.h5')
+
+ALERT_CONFIG = {
+    'EMAIL_ENABLED': _env_bool('EMAIL_ENABLED', False),
+    'SMS_ENABLED': _env_bool('SMS_ENABLED', False),
+    'ALERT_EMAIL': os.environ.get('ALERT_EMAIL', ''),
+    'DETECTION_THRESHOLD': _env_float('DETECTION_THRESHOLD', 0.76),
+    'CONSECUTIVE_THRESHOLD': _env_int('CONSECUTIVE_THRESHOLD', 5),
+    'FREQUENCY_THRESHOLD': _env_int('FREQUENCY_THRESHOLD', 10),
+    'FREQUENCY_WINDOW': _env_int('FREQUENCY_WINDOW', 60),
+    'ALERT_COOLDOWN': _env_int('ALERT_COOLDOWN', 300),
+    'TWILIO_ACCOUNT_SID': os.environ.get('TWILIO_ACCOUNT_SID', ''),
+    'TWILIO_AUTH_TOKEN': os.environ.get('TWILIO_AUTH_TOKEN', ''),
+    'TWILIO_PHONE_NUMBER': os.environ.get('TWILIO_PHONE_NUMBER', ''),
+    'ALERT_PHONE_NUMBER': os.environ.get('ALERT_PHONE_NUMBER', ''),
+}
 
 CACHES = {
     'default': {

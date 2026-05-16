@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
 export default function Home() {
   return (
@@ -97,11 +96,11 @@ export default function Home() {
                 time.
               </p>
               <Link
-                href="#"
+                href="/analytics"
                 className="btn"
                 style={{ marginTop: "15px", display: "inline-block" }}
               >
-                View Reports
+                View Analytics
               </Link>
             </div>
           </div>

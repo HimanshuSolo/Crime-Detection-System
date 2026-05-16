@@ -13,6 +13,9 @@ class AlertTracker:
         self.suspicious_timestamps = []
         self.last_alert_time = 0
         self.total_suspicious = 0
+        self.latest_label = "NORMAL"
+        self.latest_score = None
+        self.latest_updated_at = 0
 
     def record_prediction(self, is_suspicious):
         now = time.time()
@@ -51,12 +54,20 @@ class AlertTracker:
     def mark_alert_sent(self):
         self.last_alert_time = time.time()
 
+    def update_latest_status(self, label, score=None):
+        self.latest_label = label
+        self.latest_score = score
+        self.latest_updated_at = time.time()
+
     def get_stats(self):
         return {
             'consecutive_suspicious': self.consecutive_suspicious,
             'recent_suspicious_count': len(self.suspicious_timestamps),
             'total_suspicious': self.total_suspicious,
             'last_alert_time': self.last_alert_time,
+            'latest_label': self.latest_label,
+            'latest_score': self.latest_score,
+            'latest_updated_at': self.latest_updated_at,
         }
 
 

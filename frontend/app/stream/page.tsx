@@ -1,16 +1,72 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type LatestStatus = {
+  label: string;
+  score: number | null;
+  updated_at: number;
+};
 
 export default function Stream() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [orientation, setOrientation] = useState<"portrait" | "landscape" | "square">("landscape");
+  const [latestStatus, setLatestStatus] = useState<LatestStatus>({
+    label: "NORMAL",
+    score: null,
+    updated_at: 0,
+  });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
-    setLoading(false);
+    let active = true;
+
+    const loadLatestStatus = async () => {
+      try {
+        const response = await fetch("/api/alerts/");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (active && data.latest_status) {
+          setLatestStatus(data.latest_status);
+        }
+      } catch {
+        return;
+      }
+    };
+
+    loadLatestStatus();
+    const loadingTimer = window.setTimeout(() => {
+      if (active) {
+        setLoading(false);
+      }
+    }, 1500);
+    const timer = window.setInterval(loadLatestStatus, 2000);
+    return () => {
+      active = false;
+      window.clearTimeout(loadingTimer);
+      window.clearInterval(timer);
+    };
   }, []);
+
+  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    if (image.naturalWidth < image.naturalHeight) {
+      setOrientation("portrait");
+    } else if (image.naturalWidth === image.naturalHeight) {
+      setOrientation("square");
+    } else {
+      setOrientation("landscape");
+    }
+    setLoading(false);
+  };
+
+  const stageStyle = {
+    width: "100%",
+    maxWidth: orientation === "portrait" ? "460px" : orientation === "square" ? "760px" : "1120px",
+    height: orientation === "portrait" ? "min(78vh, 760px)" : orientation === "square" ? "min(74vh, 760px)" : "min(70vh, 620px)",
+  } as const;
 
   return (
     <div className="container">
@@ -73,6 +129,11 @@ export default function Stream() {
           className="video-container"
           style={{
             position: "relative",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "12px",
             marginBottom: "25px",
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
             borderRadius: "10px",
@@ -106,18 +167,42 @@ export default function Stream() {
               </p>
             </div>
           )}
-          <img
-            src={`${apiUrl}/getstream/`}
-            alt="Live Stream"
+          <div
             style={{
-              width: "100%",
-              height: "auto",
-              display: "block",
-              minHeight: "400px",
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              zIndex: 12,
+              padding: "6px 10px",
+              borderRadius: "999px",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              color: "#fff",
+              background: latestStatus.label === "SUSPICIOUS" ? "rgba(220, 38, 38, 0.92)" : "rgba(22, 163, 74, 0.92)",
+              border: "1px solid rgba(255,255,255,0.24)",
+              boxShadow: "0 8px 18px rgba(0,0,0,0.25)",
+              pointerEvents: "none",
             }}
-            onError={() => setError("Failed to load stream")}
-            onLoad={() => setLoading(false)}
-          />
+          >
+            {latestStatus.label}
+          </div>
+          <div style={stageStyle}>
+            <img
+              src={`${apiUrl}/getstream/`}
+              alt="Live Stream"
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+                objectFit: "contain",
+                background: "#000",
+                borderRadius: "8px",
+              }}
+              onError={() => setError("Failed to load stream")}
+              onLoad={handleImageLoad}
+            />
+          </div>
         </div>
 
         <div

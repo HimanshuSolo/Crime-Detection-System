@@ -22,6 +22,7 @@ export default function RootLayout({
               <a href="/">Home</a>
               <a href="/analyze">Analyze Video</a>
               <a href="/stream">Live Stream</a>
+              <a href="/analytics">Analytics</a>
               <a href="/alerts">Alerts</a>
             </nav>
           </div>
