@@ -47,7 +47,12 @@ class VideoCamera:
         self.thickness = 1
         self.SIZE = (150, 150)
         self.THRESH = settings.ALERT_CONFIG.get("DETECTION_THRESHOLD", 0.76)
-        self.url = 0 if url is None else "." + url
+        if url is None:
+            self.url = 0
+        elif isinstance(url, str) and (url.startswith("http") or url.startswith("rtsp")):
+            self.url = url
+        else:
+            self.url = "." + url
         self.video = cv2.VideoCapture(self.url)
         self.skipCount = 2
         self.prev = None
@@ -154,6 +159,18 @@ def StreamToken(request, token):
         if entry is None:
             return add_cors_headers(JsonResponse({"message": "Token Not Registered"}, status=404))
         return StreamingHttpResponse(gen(VideoCamera(entry.vid.url)), content_type="multipart/x-mixed-replace;boundary=frame")
+    except Exception:
+        print("aborted")
+        return HttpResponse(status=500)
+
+
+@gzip.gzip_page
+def StreamIP(request):
+    try:
+        ip_url = request.GET.get('url')
+        if not ip_url:
+            return add_cors_headers(JsonResponse({"message": "No IP URL provided"}, status=400))
+        return add_cors_headers(StreamingHttpResponse(gen(VideoCamera(ip_url)), content_type="multipart/x-mixed-replace;boundary=frame"))
     except Exception:
         print("aborted")
         return HttpResponse(status=500)
