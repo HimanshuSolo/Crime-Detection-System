@@ -10,6 +10,7 @@ urlpatterns = [
     # Streaming endpoints (support with and without trailing slashes)
     path("getstream", Stream, name="streamdt"),
     path("getstream/", Stream, name="streamdt_slash"),
+    path("getipstream", StreamIP, name="streamip"),
     path("gettokenstream/<token>", StreamToken, name="streamtk"),
     path("gettokenstream/<token>/", StreamToken, name="streamtk_slash"),
 
